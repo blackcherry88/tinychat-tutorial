@@ -8,6 +8,8 @@
 #include "../matmul.h"
 #include "common.h"
 
+// #define QM_x86
+
 namespace matmul {
 void MatmulOperator::mat_mul_reference(struct matmul_params *params) {
     const struct matrix *A = &params->A, *B = &params->B, *C = &params->C;
@@ -47,8 +49,8 @@ void MatmulOperator::mat_mul_reference(struct matmul_params *params) {
                 for (int qj = 0; qj < 16; qj++) {
                     // decode a packed byte into two int8 in the range of (-8, 7)
                     uint8_t packed_int4_0 = w_int4[qj];
-                    signed char w_de_0 = (packed_int4_0 & 0x0F) - 8.0;
-                    signed char w_de_16 = (packed_int4_0 >> 4) - 8.0;
+                    signed char w_de_0 = (packed_int4_0 & 0x0F) - 8;
+                    signed char w_de_16 = (packed_int4_0 >> 4) - 8;
                     // int8 multiply and accumulate operation
                     intermediate_sum += a_int8[qj] * w_de_0;
                     intermediate_sum += a_int8[qj + 16] * w_de_16;
@@ -76,8 +78,10 @@ void MatmulOperator::mat_mul_reference(struct matmul_params *params) {
                 for (int qj = 0; qj < 32; qj++) {
                     // decode a packed byte into two int8 in the range of (-8, 7)
                     uint8_t packed_int4_0 = w_int4[qj];
-                    signed char w_de_0 = (packed_int4_0 & 0x0F) - 8.0;
-                    signed char w_de_16 = (packed_int4_0 >> 4) - 8.0;
+                    // signed char w_de_0 = (packed_int4_0 & 0x0F) - 8.0;
+                    // signed char w_de_16 = (packed_int4_0 >> 4) - 8.0;
+                    signed char w_de_0 = (packed_int4_0 & 0x0F) - 8;
+                    signed char w_de_16 = (packed_int4_0 >> 4) - 8;
                     // int8 multiply and accumulate operation
                     intermediate_sum += a_int8[qj] * w_de_0;
                     intermediate_sum_2nd += a_int8[qj + 32] * w_de_16;

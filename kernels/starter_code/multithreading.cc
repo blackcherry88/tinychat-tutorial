@@ -7,6 +7,10 @@
 
 #include "../matmul.h"
 #include "common.h"
+
+
+//#define QM_x86
+
 struct multithreading_thread_args {
     int start, end;
     const struct matmul_params* params;
@@ -78,8 +82,8 @@ static void* multithreading_worker_func(void* args) {
                 for (int qj = 0; qj < 32; qj++) {
                     // decode a packed byte into two int8 in the range of (-8, 7)
                     uint8_t packed_int4_0 = w_int4[qj];
-                    signed char w_de_0 = (packed_int4_0 & 0x0F) - 8.0;
-                    signed char w_de_16 = (packed_int4_0 >> 4) - 8.0;
+                    signed char w_de_0 = (packed_int4_0 & 0x0F) - 8;
+                    signed char w_de_16 = (packed_int4_0 >> 4) - 8;
                     // int8 multiply and accumulate operation
                     intermediate_sum += a_int8[qj] * w_de_0;
                     intermediate_sum_2nd += a_int8[qj + 32] * w_de_16;
@@ -110,7 +114,22 @@ void MatmulOperator::mat_mul_multithreading(struct matmul_params* params) {
     struct multithreading_thread_args threads_args[num_thread];
 
     // TODO: Thread creation
+    int t_col_blk = n / 4;
+    int start_blk = 0;
+    struct multithreading_thread_args *p_arg = threads_args;
+    pthread_t *p_t = thread_pool;
+
+    for (int i = 0; i < num_thread; i++, p_arg++, p_t++) {
+        p_arg->start = start_blk;
+        start_blk += t_col_blk;
+        p_arg->end = start_blk;
+        p_arg->params = params;
+        pthread_create(p_t, NULL, multithreading_worker_func, (void *)p_arg);
+    }
 
     // TODO: Join threads
+    for (int i = 0; i < num_thread; i++, p_t++) {
+        pthread_join(thread_pool[i], NULL);
+    }
 };
 }  // namespace matmul
